@@ -1,0 +1,192 @@
+:root {
+    --bg-color: #2c3e50;
+    --card-red: #ff5555;
+    --card-blue: #5555ff;
+    --card-green: #55aa55;
+    --card-yellow: #ffaa00;
+    --card-black: #1a1a1a;
+    --table-green: #27ae60;
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--bg-color);
+    height: 100vh;
+    overflow: hidden;
+    color: white;
+}
+
+.game-table {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+    background: radial-gradient(circle, #3a5f45 0%, #1e3c28 100%); /* Efeito de mesa de feltro */
+}
+
+/* --- OPONENTES --- */
+.opponents-area {
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    gap: 20px;
+}
+
+.opponent {
+    text-align: center;
+    opacity: 0.7;
+    transition: 0.3s;
+}
+
+.opponent.active-turn {
+    opacity: 1;
+    transform: scale(1.1);
+    font-weight: bold;
+    text-shadow: 0 0 10px yellow;
+}
+
+.avatar {
+    font-size: 2rem;
+    background: rgba(0,0,0,0.3);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    margin: 0 auto;
+}
+
+/* --- ÁREA CENTRAL (Mesa) --- */
+.center-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    flex-grow: 1;
+}
+
+.card-pile {
+    width: 100px;
+    height: 150px;
+    border-radius: 10px;
+    position: relative;
+}
+
+/* Deck (Monte de compras) */
+.deck .card-back {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, #111, #333);
+    border-radius: 10px;
+    border: 2px solid white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 1.5rem;
+    color: orange;
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+    cursor: pointer;
+}
+.deck .card-back:hover { transform: translateY(-5px); }
+
+/* --- DESIGN DAS CARTAS --- */
+.card {
+    width: 100px;
+    height: 150px;
+    background-color: white;
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+    user-select: none;
+    cursor: pointer;
+    transition: transform 0.2s;
+    border: 4px solid white; /* Borda branca clássica do UNO */
+    box-sizing: border-box;
+}
+
+.card:hover { transform: translateY(-20px) scale(1.05); z-index: 10; }
+
+/* Cores das Cartas */
+.card.red { background-color: var(--card-red); }
+.card.blue { background-color: var(--card-blue); }
+.card.green { background-color: var(--card-green); }
+.card.yellow { background-color: var(--card-yellow); }
+.card.black { background-color: var(--card-black); }
+
+/* Ovelha branca no centro */
+.card .inner {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    width: 60%;
+    height: 80%;
+    background: white;
+    border-radius: 50%; /* Oval */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+}
+
+/* Texto Central */
+.card .mark {
+    font-size: 2.5rem;
+    font-weight: 900;
+    font-family: sans-serif;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+    /* A cor do texto central pega a cor do fundo da carta */
+}
+.card.red .mark { color: var(--card-red); }
+.card.blue .mark { color: var(--card-blue); }
+.card.green .mark { color: var(--card-green); }
+.card.yellow .mark { color: var(--card-yellow); }
+.card.black .mark { 
+    background: linear-gradient(to right, red, blue, green, yellow);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+/* Números nos cantos */
+.top-mark, .bottom-mark {
+    position: absolute;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+    padding: 5px;
+}
+.top-mark { top: 2px; left: 5px; }
+.bottom-mark { bottom: 2px; right: 5px; transform: rotate(180deg); }
+
+/* --- ÁREA DO JOGADOR --- */
+.player-area {
+    padding: 20px;
+    background: rgba(0,0,0,0.2);
+}
+
+.player-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.btn-uno {
+    background-color: #ffaa00;
+    border: none;
+    padding: 5px 20px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.hand {
+    display: flex;
+    justify-content: center;
+    gap: -30px; /* Sobreposição das cartas */
+    height: 160px;
+}
+
+.hand .card {
+    margin-left: -20px; /* Efeito leque */
+}

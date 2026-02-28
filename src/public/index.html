@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNO Web</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="game-table">
+
+        <div class="opponents-area">
+            <div class="opponent">
+                <div class="avatar">👤</div>
+                <div class="name">Player 2</div>
+                <div class="card-count">7 🎴</div>
+            </div>
+            <div class="opponent active-turn">
+                <div class="avatar">👤</div>
+                <div class="name">Player 3</div>
+                <div class="card-count">2 🎴</div>
+            </div>
+            <div class="opponent">
+                <div class="avatar">👤</div>
+                <div class="name">Player 4</div>
+                <div class="card-count">5 🎴</div>
+            </div>
+        </div>
+
+        <div class="center-area">
+            <div class="card-pile deck" id="deck">
+                <div class="card-back">UNO</div>
+            </div>
+
+            <div class="card-pile discard" id="discard-pile">
+                <div class="card red">
+                    <span class="inner">
+                        <span class="mark">7</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="player-area">
+            <div class="player-info">
+                <span>Sua Vez!</span>
+                <button class="btn-uno">GRITAR UNO!</button>
+            </div>
+
+            <div class="hand" id="my-hand">
+                <div class="card blue">
+                    <span class="top-mark">3</span>
+                    <span class="inner"><span class="mark">3</span></span>
+                    <span class="bottom-mark">3</span>
+                </div>
+
+                <div class="card green">
+                    <span class="top-mark">⊘</span>
+                    <span class="inner"><span class="mark">⊘</span></span>
+                    <span class="bottom-mark">⊘</span>
+                </div>
+
+                <div class="card black">
+                    <span class="top-mark">+4</span>
+                    <span class="inner"><span class="mark">+4</span></span>
+                    <span class="bottom-mark">+4</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: uno_api_postgres
+    environment:
+      POSTGRES_DB: uno_api_js
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - uno_pg_data:/var/lib/postgresql/data
+
+volumes:
+  uno_pg_data:
