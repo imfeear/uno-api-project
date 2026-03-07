@@ -12,6 +12,7 @@ Crie um database chamado `uno_api_js` (ou ajuste DB_NAME no `.env`).
 2) `npm run dev`
 
 Base URL: `http://localhost:3000`
+Base URL Swagger UI: `hhttp://localhost:3000/unoApi`
 Health: `GET /health`
 
 CRUD:

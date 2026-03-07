@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.use("/players", playerRoutes);
 router.use("/games", gameRoutes);
-router.use("/games", gameLobbyRoutes);
+router.use("/game-lobby", gameLobbyRoutes);
 router.use("/cards", cardRoutes);
 router.use("/scores", scoreRoutes);
 

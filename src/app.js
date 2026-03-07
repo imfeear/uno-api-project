@@ -7,10 +7,14 @@ const errorHandler = require("./middlewares/errorHandler");
 const memoize = require("./middlewares/memoize");
 const cacheBuster = require("./middlewares/cacheBuster");
 const { CACHE_MAX, CACHE_MAX_AGE_MS } = require("./config/cache");
+const swaggerUi = require('swagger-ui-express'); // importa os pacotes do Swagger UI Express, criando a interface de documentação para visualizar e testar as rotas.
+const swaggerSpecs = require('./config/swagger');// essa variavel importa as especificações do Swagger, que são definidas em um arquivo separado (src/config/swagger.js).
 
 const app = express();
 
 app.use(express.json());
+
+app.use('/unoAPI', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
