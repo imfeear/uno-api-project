@@ -28,7 +28,6 @@ async function play(req, res, next) {
 async function draw(req, res, next) {
   try {
     const gameId = Number(req.body.game_id);
-
     const result = await realtimeGameService.drawCard(gameId, req.user.id);
     if (result.error) return res.status(result.status).json({ error: result.error });
 
@@ -41,11 +40,37 @@ async function draw(req, res, next) {
 async function uno(req, res, next) {
   try {
     const gameId = Number(req.body.game_id);
-
     const result = await realtimeGameService.declareUno(gameId, req.user.id);
     if (result.error) return res.status(result.status).json({ error: result.error });
 
     return res.status(200).json({ message: "UNO declared successfully" });
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function challengeUno(req, res, next) {
+  try {
+    const gameId = Number(req.body.game_id);
+    const targetUserId = Number(req.body.target_user_id);
+
+    const result = await realtimeGameService.challengeUno(gameId, req.user.id, targetUserId);
+    if (result.error) return res.status(result.status).json({ error: result.error });
+
+    return res.status(200).json({ message: "UNO challenge applied successfully" });
+  } catch (e) {
+    next(e);
+  }
+}
+
+async function history(req, res, next) {
+  try {
+    const gameId = Number(req.body.game_id);
+
+    const result = await realtimeGameService.getMoveHistory(gameId, req.user.id);
+    if (result.error) return res.status(result.status).json({ error: result.error });
+
+    return res.status(200).json(result.data);
   } catch (e) {
     next(e);
   }
@@ -56,4 +81,6 @@ module.exports = {
   play,
   draw,
   uno,
+  challengeUno,
+  history,
 };

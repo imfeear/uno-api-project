@@ -30,10 +30,18 @@ async function updateUnoState(id, data) {
   return hand;
 }
 
+async function removeByGameAndUser(gameId, userId) {
+  const hand = await PlayerHand.findOne({ where: { gameId, userId } });
+  if (!hand) return false;
+  await hand.destroy();
+  return true;
+}
+
 module.exports = {
   create,
   findByGameId,
   findByGameAndUser,
   updateCards,
   updateUnoState,
+  removeByGameAndUser,
 };

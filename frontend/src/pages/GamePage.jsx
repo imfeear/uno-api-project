@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { declareUno, drawCard, getRealtimeState, playCard } from "../api/realtimeGame";
+import {
+  challengeUno,
+  declareUno,
+  drawCard,
+  getGameHistory,
+  getRealtimeState,
+  playCard
+} from "../api/realtimeGame";
+import { getCurrentGameScores } from "../api/score";
 import { useAuth } from "../context/AuthContext";
 import { useSocketContext } from "../context/SocketContext";
 import UnoCard from "../components/UnoCard";
@@ -25,22 +33,63 @@ function getWinnerName(state) {
   return winner?.username || `Usuário ${state?.winnerUserId}`;
 }
 
+function getCurrentPlayerName(state) {
+  const current = state?.players?.find((player) => player.isCurrentTurn);
+  return current?.username || "-";
+}
+
+function normalizeScores(data) {
+  if (!data) return [];
+
+  if (Array.isArray(data?.scores)) {
+    return data.scores.map((item) => ({
+      name: item.name || item.username || `Jogador ${item.playerId ?? ""}`,
+      points: item.points ?? item.score ?? 0
+    }));
+  }
+
+  if (data?.scores && typeof data.scores === "object") {
+    return Object.entries(data.scores).map(([name, points]) => ({
+      name,
+      points
+    }));
+  }
+
+  return [];
+}
+
 function getNiceMessage(err) {
   const text = err?.message || "Ocorreu um erro.";
 
-  if (text.toLowerCase().includes("not your turn")) {
-    return "Ainda não é a sua vez.";
-  }
+  const lower = text.toLowerCase();
 
-  if (text.toLowerCase().includes("invalid card")) {
-    return "Essa carta não pode ser jogada agora.";
-  }
-
-  if (text.toLowerCase().includes("wild")) {
-    return "Escolha uma cor antes de jogar essa carta.";
-  }
+  if (lower.includes("not your turn")) return "Ainda não é a sua vez.";
+  if (lower.includes("invalid move")) return "Essa carta não pode ser jogada agora.";
+  if (lower.includes("invalid card")) return "Selecione uma carta válida.";
+  if (lower.includes("wild")) return "Escolha uma cor antes de jogar essa carta.";
+  if (lower.includes("playable card")) return "Você já tem uma carta jogável e precisa jogá-la.";
+  if (lower.includes("uno")) return text;
 
   return text;
+}
+
+function HistoryList({ history }) {
+  if (!history?.length) {
+    return <p>Nenhum movimento registrado ainda.</p>;
+  }
+
+  return (
+    <div className="log-box">
+      {history
+        .slice()
+        .reverse()
+        .map((item, index) => (
+          <p key={`${item.createdAt}-${index}`}>
+            {new Date(item.createdAt).toLocaleTimeString()} - {item.message || item.type}
+          </p>
+        ))}
+    </div>
+  );
 }
 
 export default function GamePage() {
@@ -50,9 +99,10 @@ export default function GamePage() {
   const { connect, connected } = useSocketContext();
 
   const [state, setState] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [scores, setScores] = useState([]);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const [events, setEvents] = useState([]);
   const [chosenColor, setChosenColor] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(null);
   const [selectedCard, setSelectedCard] = useState(null);
@@ -62,9 +112,10 @@ export default function GamePage() {
 
   const numericGameId = useMemo(() => Number(gameId), [gameId]);
 
-  function addEvent(text) {
-    setEvents((old) => [`${new Date().toLocaleTimeString()} - ${text}`, ...old.slice(0, 14)]);
-  }
+  const players = state?.players || [];
+  const myPlayer = players.find((p) => getPlayerId(p) === user?.id);
+  const isMyTurn = !!myPlayer?.isCurrentTurn;
+  const otherPlayers = players.filter((p) => getPlayerId(p) !== user?.id);
 
   async function loadState() {
     try {
@@ -76,18 +127,43 @@ export default function GamePage() {
     }
   }
 
+  async function loadHistory() {
+    try {
+      const data = await getGameHistory(numericGameId);
+      setHistory(data?.history || []);
+    } catch {
+      setHistory([]);
+    }
+  }
+
+  async function loadScores() {
+    try {
+      const data = await getCurrentGameScores(numericGameId);
+      setScores(normalizeScores(data));
+    } catch {
+      setScores([]);
+    }
+  }
+
+  async function refreshAll() {
+    await Promise.all([loadState(), loadHistory(), loadScores()]);
+  }
+
   function handleEndGameRedirect() {
     navigate("/lobby", { replace: true });
   }
 
   useEffect(() => {
-    loadState();
+    refreshAll();
   }, [numericGameId]);
 
   useEffect(() => {
     if (!state) return;
 
-    const ended = !!state.winnerUserId || state.status === "finished" || state.status === "ended";
+    const ended =
+      !!state.winnerUserId ||
+      state.status === "finished" ||
+      state.status === "ended";
 
     if (ended) {
       setShowResult(true);
@@ -113,37 +189,40 @@ export default function GamePage() {
 
     function onGameState(data) {
       if (Number(data.gameId) !== numericGameId) return;
-      setState((old) => ({ ...old, ...data }));
-      addEvent("Estado da mesa atualizado.");
+      setState(data);
+
+      if (Array.isArray(data.history)) {
+        setHistory(data.history);
+      }
     }
 
     function onPrivateGameState(data) {
       if (Number(data.gameId) !== numericGameId) return;
       setState(data);
-      addEvent("Sua mão foi atualizada.");
+
+      if (Array.isArray(data.history)) {
+        setHistory(data.history);
+      }
     }
 
     function onGameEvent(event) {
       if (Number(event.gameId) !== numericGameId) return;
 
-      const text = event.message || `${event.type}`;
-      addEvent(text);
+      const type = String(event.type || "").toLowerCase();
 
-      if (event.type === "CARD_PLAYED") {
+      if (type.includes("card_played")) {
         setMessage("Carta jogada com sucesso.");
-      }
-
-      if (event.type === "CARD_DRAWN") {
+      } else if (type.includes("card_drawn")) {
         setMessage("Carta comprada com sucesso.");
-      }
-
-      if (event.type === "UNO_DECLARED") {
-        setMessage("UNO declarado.");
-      }
-
-      if (event.type === "GAME_FINISHED" || event.type === "WINNER_DECLARED") {
+      } else if (type.includes("uno_declared")) {
+        setMessage("UNO declarado com sucesso.");
+      } else if (type.includes("uno_challenged")) {
+        setMessage("Penalidade de UNO aplicada.");
+      } else if (type.includes("game_finished")) {
         setMessage("A partida foi encerrada.");
       }
+
+      refreshAll();
     }
 
     socket.on("game_state", onGameState);
@@ -160,11 +239,6 @@ export default function GamePage() {
       socket.off("game_event", onGameEvent);
     };
   }, [numericGameId, token]);
-
-  const players = state?.players || [];
-  const myPlayer = players.find((p) => getPlayerId(p) === user?.id);
-  const isMyTurn = !!myPlayer?.isCurrentTurn;
-  const otherPlayers = players.filter((p) => getPlayerId(p) !== user?.id);
 
   function handleSelectCard(card, index) {
     if (!isMyTurn) {
@@ -203,8 +277,8 @@ export default function GamePage() {
       setSelectedCard(null);
       setSelectedIndex(null);
       setChosenColor("");
+      await refreshAll();
       setMessage("Carta enviada para a pilha.");
-      await loadState();
     } catch (err) {
       setError(getNiceMessage(err));
       setMessage("");
@@ -220,7 +294,7 @@ export default function GamePage() {
       await drawCard(numericGameId);
       setSelectedCard(null);
       setSelectedIndex(null);
-      await loadState();
+      await refreshAll();
       setMessage("Carta comprada.");
     } catch (err) {
       setError(getNiceMessage(err));
@@ -233,8 +307,21 @@ export default function GamePage() {
       setError("");
       setMessage("Declarando UNO...");
       await declareUno(numericGameId);
-      await loadState();
+      await refreshAll();
       setMessage("UNO declarado com sucesso.");
+    } catch (err) {
+      setError(getNiceMessage(err));
+      setMessage("");
+    }
+  }
+
+  async function handleChallengeUno(targetUserId) {
+    try {
+      setError("");
+      setMessage("Aplicando desafio de UNO...");
+      await challengeUno(numericGameId, targetUserId);
+      await refreshAll();
+      setMessage("Desafio de UNO aplicado com sucesso.");
     } catch (err) {
       setError(getNiceMessage(err));
       setMessage("");
@@ -255,7 +342,12 @@ export default function GamePage() {
         <div className="table-badge">{connected ? "Socket conectado" : "Socket desconectado"}</div>
         <div className="table-badge">Status: {state?.status || "-"}</div>
         <div className="table-badge">Direção: {state?.direction === 1 ? "Horário" : "Anti-horário"}</div>
-        <div className="table-badge">Carta do topo: {state?.topCard ? `${state.topCard.color} ${state.topCard.value}` : "-"}</div>
+        <div className="table-badge">
+          Topo do descarte: {state?.topCard ? `${state.topCard.color} ${state.topCard.value}` : "-"}
+        </div>
+        <div className="table-badge">
+          Jogador atual: {getCurrentPlayerName(state)}
+        </div>
       </div>
 
       {error && <p className="error">{error}</p>}
@@ -277,8 +369,17 @@ export default function GamePage() {
 
               <div className="opponent-meta">
                 <span>Cartas: {player.handCount}</span>
-                <span>{player.unoDeclared ? "UNO declarado" : ""}</span>
+                <span>{player.unoDeclared ? "UNO declarado" : player.mustDeclareUno ? "Pode ser desafiado" : ""}</span>
               </div>
+
+              {player.mustDeclareUno && !player.unoDeclared && (
+                <button
+                  className="table-action-button"
+                  onClick={() => handleChallengeUno(getPlayerId(player))}
+                >
+                  Desafiar UNO
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -339,7 +440,7 @@ export default function GamePage() {
 
               <div className="player-actions">
                 <button onClick={handleUno}>Declarar UNO</button>
-                <button onClick={loadState}>Atualizar</button>
+                <button onClick={refreshAll}>Atualizar</button>
               </div>
             </div>
 
@@ -392,11 +493,45 @@ export default function GamePage() {
         </div>
       </section>
 
-      <section className="card game-events-card">
-        <h3>Eventos da partida</h3>
-        <div className="log-box">
-          {events.length === 0 ? <p>Nenhum evento registrado ainda.</p> : events.map((item, index) => <p key={index}>{item}</p>)}
+      <section className="grid-two">
+        <div className="card">
+          <h3>Jogadores da partida</h3>
+          <div className="list">
+            {players.map((player) => (
+              <div key={getPlayerId(player)} className="list-item">
+                <div>
+                  <strong>{player.username}</strong>
+                  <p>ID: {getPlayerId(player)}</p>
+                </div>
+                <div>
+                  <p>{player.isCurrentTurn ? "Turno atual" : "Aguardando"}</p>
+                  <p>Cartas: {player.handCount ?? 0}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <div className="card">
+          <h3>Pontuações atuais</h3>
+          {scores.length === 0 ? (
+            <p>Nenhuma pontuação disponível para esta partida.</p>
+          ) : (
+            <div className="score-list">
+              {scores.map((item, index) => (
+                <div className="score-card" key={`${item.name}-${index}`}>
+                  <h3>{item.name}</h3>
+                  <p><strong>Pontos:</strong> {item.points}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="card game-events-card">
+        <h3>Histórico de movimentos</h3>
+        <HistoryList history={history} />
       </section>
     </div>
   );

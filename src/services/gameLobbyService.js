@@ -158,7 +158,42 @@ async function leaveGame(gameId, userId) {
   const entry = await playerGameRepo.findByGameAndUser(id, userId);
   if (!entry) return { error: "User is not part of this game", status: 404 };
 
+  const playersBefore = await playerGameRepo.findByGame(id);
+  const leavingIndex = playersBefore.findIndex((p) => p.userId === userId);
+
   await playerGameRepo.removeByGameAndUser(id, userId);
+
+  const playerHandRepo = require("../repositories/playerHandRepository");
+  const gameStateRepo = require("../repositories/gameStateRepository");
+
+  await playerHandRepo.removeByGameAndUser(id, userId);
+
+  const state = await gameStateRepo.findByGameId(id);
+  const playersAfter = await playerGameRepo.findByGame(id);
+
+  if (state && playersAfter.length > 0) {
+    let newCurrentIndex = state.currentPlayerIndex;
+
+    if (leavingIndex >= 0) {
+      if (leavingIndex < state.currentPlayerIndex) {
+        newCurrentIndex = state.currentPlayerIndex - 1;
+      } else if (leavingIndex === state.currentPlayerIndex) {
+        newCurrentIndex = state.currentPlayerIndex;
+        if (newCurrentIndex >= playersAfter.length) {
+          newCurrentIndex = 0;
+        }
+      }
+    }
+
+    await state.update({
+      currentPlayerIndex: Math.max(0, newCurrentIndex)
+    });
+  }
+
+  if (game.status === "in_progress" && playersAfter.length <= 1) {
+    await game.update({ status: "finished" });
+  }
+
   lobbyEvents.emit("player_left", {
     gameId: id,
     actor: userId,

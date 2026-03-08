@@ -128,4 +128,7 @@ router.post("/draw", auth, c.draw);
  */
 router.post("/uno", auth, c.uno);
 
+router.post("/challenge-uno", auth, c.challengeUno);
+router.post("/history", auth, c.history);
+
 module.exports = router;

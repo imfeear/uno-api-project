@@ -1,6 +1,7 @@
 const service = require("../../services/gameService");
-const cardRepo = require("../../repositories/cardRepository");
 const scoreService = require("../../services/scoreService");
+const gameStateRepo = require("../../repositories/gameStateRepository");
+const playerGameRepo = require("../../repositories/playerGameRepository");
 const { requirePositiveInt } = require("../../validators/numberValidators");
 
 async function getGameState(req, res) {
@@ -8,7 +9,21 @@ async function getGameState(req, res) {
   const game = await service.getGameById(gameId);
   if (!game) return res.status(404).json({ error: "Game not found" });
 
-  return res.json({ game_id: game.id, state: game.status });
+  const state = await gameStateRepo.findByGameId(gameId);
+
+  return res.json({
+    game_id: game.id,
+    state: {
+      status: game.status,
+      started: !!state?.started,
+      currentPlayerIndex: state?.currentPlayerIndex ?? 0,
+      direction: state?.direction ?? 1,
+      topCard: state?.discardPile?.length
+        ? state.discardPile[state.discardPile.length - 1]
+        : null,
+      winnerUserId: state?.winnerUserId ?? null
+    }
+  });
 }
 
 async function getGamePlayers(req, res) {
@@ -25,14 +40,22 @@ async function getGamePlayers(req, res) {
 async function getCurrentPlayer(req, res) {
   const gameId = requirePositiveInt(req.body.game_id, "game_id");
 
-  const currentPlayer = await service.getCurrentPlayer(gameId);
-  if (!currentPlayer) {
-    return res.status(404).json({ error: "Game not found or no players" });
+  const state = await gameStateRepo.findByGameId(gameId);
+  if (!state) {
+    return res.status(404).json({ error: "Game state not found" });
+  }
+
+  const players = await playerGameRepo.findByGame(gameId);
+  const current = players[state.currentPlayerIndex];
+
+  if (!current) {
+    return res.status(404).json({ error: "Current player not found" });
   }
 
   return res.json({
     game_id: gameId,
-    current_player: currentPlayer.username || currentPlayer.name,
+    current_player: current.user?.username || `User ${current.userId}`,
+    current_player_id: current.userId
   });
 }
 
@@ -42,16 +65,16 @@ async function getTopCard(req, res) {
   const game = await service.getGameById(gameId);
   if (!game) return res.status(404).json({ error: "Game not found" });
 
-  const top = await cardRepo.findTopCardByGame(gameId);
-  if (!top) return res.status(404).json({ error: "No cards found for this game" });
+  const state = await gameStateRepo.findByGameId(gameId);
+  if (!state || !state.discardPile?.length) {
+    return res.status(404).json({ error: "No discard pile found for this game" });
+  }
+
+  const top = state.discardPile[state.discardPile.length - 1];
 
   return res.json({
     game_id: gameId,
-    top_card: {
-      id: top.id,
-      color: top.color,
-      value: top.value,
-    },
+    top_card: top
   });
 }
 
