@@ -31,8 +31,6 @@ const router = express.Router();
  *     responses:
  *       201:
  *         description: Jogo criado com sucesso
- *       400:
- *         description: Dados inválidos
  *
  *   get:
  *     summary: Lista todos os jogos
@@ -74,7 +72,7 @@ router.post("/state", asyncHandler(gameController.getGameState));
  * @swagger
  * /games/players:
  *   post:
- *     summary: Lista os jogadores de um jogo
+ *     summary: Lista os jogadores vinculados a um jogo
  *     tags: [Games]
  *     requestBody:
  *       required: true
@@ -90,7 +88,7 @@ router.post("/state", asyncHandler(gameController.getGameState));
  *                 example: 1
  *     responses:
  *       200:
- *         description: Jogadores do jogo retornados com sucesso
+ *         description: Jogadores retornados com sucesso
  *       404:
  *         description: Game não encontrado
  */
@@ -100,7 +98,7 @@ router.post("/players", asyncHandler(gameController.getGamePlayers));
  * @swagger
  * /games/current-player:
  *   post:
- *     summary: Retorna o jogador atual da partida
+ *     summary: Retorna o jogador atual do jogo
  *     tags: [Games]
  *     requestBody:
  *       required: true
@@ -126,7 +124,7 @@ router.post("/current-player", asyncHandler(gameController.getCurrentPlayer));
  * @swagger
  * /games/top-card:
  *   post:
- *     summary: Retorna a carta do topo da pilha do jogo
+ *     summary: Retorna a carta do topo da pilha de um jogo
  *     tags: [Games]
  *     requestBody:
  *       required: true
@@ -144,7 +142,7 @@ router.post("/current-player", asyncHandler(gameController.getCurrentPlayer));
  *       200:
  *         description: Carta do topo retornada com sucesso
  *       404:
- *         description: Nenhuma carta encontrada para esse jogo
+ *         description: Game não encontrado ou sem cartas
  */
 router.post("/top-card", asyncHandler(gameController.getTopCard));
 
@@ -168,9 +166,7 @@ router.post("/top-card", asyncHandler(gameController.getTopCard));
  *                 example: 1
  *     responses:
  *       200:
- *         description: Pontuações atuais retornadas com sucesso
- *       400:
- *         description: game_id é obrigatório
+ *         description: Placar retornado com sucesso
  *       404:
  *         description: Game não encontrado
  */

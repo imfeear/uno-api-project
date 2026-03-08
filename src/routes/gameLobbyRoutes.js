@@ -8,7 +8,7 @@ const router = express.Router();
  * @swagger
  * /game-lobby/create:
  *   post:
- *     summary: Criar um novo lobby de Uno
+ *     summary: Cria um novo lobby
  *     tags: [Game Lobby]
  *     security:
  *       - bearerAuth: []
@@ -23,13 +23,13 @@ const router = express.Router();
  *             properties:
  *               name:
  *                 type: string
- *                 example: Meu Jogo de UNO
+ *                 example: Sala do Bruno
  *               rules:
  *                 type: string
- *                 example: Sem empilhar +4
+ *                 example: Regras padrão
  *               max_players:
  *                 type: integer
- *                 example: 4
+ *                 example: 2
  *     responses:
  *       201:
  *         description: Lobby criado com sucesso
@@ -40,7 +40,7 @@ router.post("/create", auth, c.createGame);
  * @swagger
  * /game-lobby/join:
  *   post:
- *     summary: Entrar em um jogo existente
+ *     summary: Entra em um lobby existente
  *     tags: [Game Lobby]
  *     security:
  *       - bearerAuth: []
@@ -50,13 +50,15 @@ router.post("/create", auth, c.createGame);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - game_id
  *             properties:
  *               game_id:
  *                 type: integer
  *                 example: 1
  *     responses:
  *       200:
- *         description: Entrou no jogo com sucesso
+ *         description: Entrou no lobby com sucesso
  */
 router.post("/join", auth, c.joinGame);
 
@@ -64,7 +66,7 @@ router.post("/join", auth, c.joinGame);
  * @swagger
  * /game-lobby/ready:
  *   post:
- *     summary: Marcar jogador como pronto
+ *     summary: Marca o jogador como pronto
  *     tags: [Game Lobby]
  *     security:
  *       - bearerAuth: []
@@ -74,6 +76,8 @@ router.post("/join", auth, c.joinGame);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - game_id
  *             properties:
  *               game_id:
  *                 type: integer
@@ -88,7 +92,7 @@ router.post("/ready", auth, c.ready);
  * @swagger
  * /game-lobby/start:
  *   post:
- *     summary: Iniciar o jogo
+ *     summary: Inicia o jogo e distribui as cartas iniciais
  *     tags: [Game Lobby]
  *     security:
  *       - bearerAuth: []
@@ -98,13 +102,15 @@ router.post("/ready", auth, c.ready);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - game_id
  *             properties:
  *               game_id:
  *                 type: integer
  *                 example: 1
  *     responses:
  *       200:
- *         description: Jogo iniciado
+ *         description: Jogo iniciado com sucesso
  */
 router.post("/start", auth, c.start);
 
@@ -112,7 +118,7 @@ router.post("/start", auth, c.start);
  * @swagger
  * /game-lobby/leave:
  *   post:
- *     summary: Sair do jogo atual
+ *     summary: Sai do jogo
  *     tags: [Game Lobby]
  *     security:
  *       - bearerAuth: []
@@ -122,13 +128,15 @@ router.post("/start", auth, c.start);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - game_id
  *             properties:
  *               game_id:
  *                 type: integer
  *                 example: 1
  *     responses:
  *       200:
- *         description: Jogador saiu do jogo
+ *         description: Saiu do jogo com sucesso
  */
 router.post("/leave", auth, c.leave);
 
@@ -136,7 +144,7 @@ router.post("/leave", auth, c.leave);
  * @swagger
  * /game-lobby/end:
  *   post:
- *     summary: Encerrar o jogo
+ *     summary: Encerra o jogo
  *     tags: [Game Lobby]
  *     security:
  *       - bearerAuth: []
@@ -146,13 +154,15 @@ router.post("/leave", auth, c.leave);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - game_id
  *             properties:
  *               game_id:
  *                 type: integer
  *                 example: 1
  *     responses:
  *       200:
- *         description: Jogo encerrado
+ *         description: Jogo encerrado com sucesso
  */
 router.post("/end", auth, c.end);
 
@@ -160,7 +170,7 @@ router.post("/end", auth, c.end);
  * @swagger
  * /game-lobby/state:
  *   post:
- *     summary: Consultar estado do lobby
+ *     summary: Consulta o estado atual do lobby
  *     tags: [Game Lobby]
  *     security:
  *       - bearerAuth: []
@@ -170,13 +180,15 @@ router.post("/end", auth, c.end);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - game_id
  *             properties:
  *               game_id:
  *                 type: integer
  *                 example: 1
  *     responses:
  *       200:
- *         description: Estado do lobby retornado
+ *         description: Estado do lobby retornado com sucesso
  */
 router.post("/state", auth, c.state);
 
