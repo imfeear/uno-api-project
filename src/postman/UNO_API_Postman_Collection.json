@@ -1,43 +1,14 @@
 {
   "info": {
     "name": "UNO API - FINAL",
-    "_postman_id": "d8e7436a-7b0f-4b30-b7a3-uno-api-final",
-    "description": "Coleção Postman para testar a UNO API localmente. Inclui autenticação, lobby, CRUD e endpoints de lógica do jogo.",
+    "_postman_id": "05a003b9-f184-46e3-ac3e-f03ed487b989",
+    "description": "Coleção Postman atualizada para a UNO API local. Inclui autenticação, lobby, realtime game, CRUD, lógica auxiliar e documentação.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3000/api"
-    },
-    {
-      "key": "docsUrl",
-      "value": "http://localhost:3000/unoAPI"
-    },
-    {
-      "key": "access_token",
-      "value": ""
-    },
-    {
-      "key": "game_id",
-      "value": ""
-    },
-    {
-      "key": "player_id",
-      "value": ""
-    },
-    {
-      "key": "card_id",
-      "value": ""
-    },
-    {
-      "key": "score_id",
-      "value": ""
-    }
-  ],
   "item": [
     {
       "name": "Infra",
+      "description": "Infraestrutura e documentação",
       "item": [
         {
           "name": "Health",
@@ -45,13 +16,30 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/health",
+              "raw": "{{baseOrigin}}/health",
               "host": [
-                "{{baseUrl}}/health"
+                "{{baseOrigin}}"
+              ],
+              "path": [
+                "health"
               ]
-            }
+            },
+            "description": "Valida se a API está online."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Health OK\", function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.expect(json.status).to.eql(\"ok\");"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Swagger UI",
@@ -61,11 +49,38 @@
             "url": {
               "raw": "{{docsUrl}}",
               "host": [
-                "{{docsUrl}}"
+                "{{baseUrl}}"
               ]
-            }
+            },
+            "description": "Abre a interface Swagger UI."
           },
           "response": []
+        },
+        {
+          "name": "OpenAPI JSON",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{openapiUrl}}",
+              "host": [
+                "{{baseUrl}}"
+              ]
+            },
+            "description": "Retorna o schema OpenAPI para importação e validação."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"OpenAPI JSON OK\", function () { pm.response.to.have.status(200); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -85,12 +100,17 @@
             "url": {
               "raw": "{{baseUrl}}/auth/register",
               "host": [
-                "{{baseUrl}}/auth/register"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
               ]
             },
+            "description": "Cria um usuário para os testes locais.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"bruno_teste\",\n  \"email\": \"bruno_teste@email.com\",\n  \"password\": \"123456\"\n}",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -124,12 +144,17 @@
             "url": {
               "raw": "{{baseUrl}}/auth/login",
               "host": [
-                "{{baseUrl}}/auth/login"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
               ]
             },
+            "description": "Autentica e salva o token JWT em access_token.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"bruno_teste\",\n  \"password\": \"123456\"\n}",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -144,14 +169,10 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "",
-                  "pm.test(\"Login OK\", function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
+                  "pm.test(\"Login OK\", function () { pm.response.to.have.status(200); });",
                   "const json = pm.response.json();",
-                  "if (json.access_token) {",
-                  "  pm.collectionVariables.set(\"access_token\", json.access_token);",
-                  "}"
+                  "if (json.access_token) pm.collectionVariables.set(\"access_token\", json.access_token);",
+                  "pm.expect(pm.collectionVariables.get(\"access_token\")).to.be.a(\"string\").and.not.empty;"
                 ]
               }
             }
@@ -170,9 +191,14 @@
             "url": {
               "raw": "{{baseUrl}}/auth/logout",
               "host": [
-                "{{baseUrl}}/auth/logout"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
               ]
             },
+            "description": "Invalida o token atual.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"access_token\": \"{{access_token}}\"\n}",
@@ -205,16 +231,26 @@
           "name": "Profile (GET com Bearer)",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
-              }
-            ],
+            "header": [],
             "url": {
               "raw": "{{baseUrl}}/users/profile",
               "host": [
-                "{{baseUrl}}/users/profile"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "profile"
+              ]
+            },
+            "description": "Consulta o perfil usando Authorization Bearer.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
               ]
             }
           },
@@ -244,9 +280,14 @@
             "url": {
               "raw": "{{baseUrl}}/users/profile",
               "host": [
-                "{{baseUrl}}/users/profile"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "profile"
               ]
             },
+            "description": "Consulta o perfil enviando o token no body.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"access_token\": \"{{access_token}}\"\n}",
@@ -283,18 +324,19 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
               "raw": "{{baseUrl}}/game-lobby/create",
               "host": [
-                "{{baseUrl}}/game-lobby/create"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "game-lobby",
+                "create"
               ]
             },
+            "description": "Cria um lobby e salva o game_id retornado.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Lobby Bruno\",\n  \"rules\": \"Sem empilhar +4\",\n  \"max_players\": 4\n}",
@@ -303,6 +345,16 @@
                   "language": "json"
                 }
               }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "response": [],
@@ -312,14 +364,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "",
-                  "pm.test(\"Create lobby OK\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "});",
+                  "pm.test(\"Create lobby OK\", function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "if (json.game_id) {",
-                  "  pm.collectionVariables.set(\"game_id\", json.game_id);",
-                  "}"
+                  "if (json.game_id) pm.collectionVariables.set(\"game_id\", String(json.game_id));"
                 ]
               }
             }
@@ -333,19 +380,19 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
               "raw": "{{baseUrl}}/game-lobby/join",
               "host": [
-                "{{baseUrl}}/game-lobby/join"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "game-lobby",
+                "join"
               ]
             },
-            "description": "Para testar entrada de outro jogador, registre/logue com outro usuário e reaproveite o mesmo game_id.",
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -354,6 +401,16 @@
                   "language": "json"
                 }
               }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "response": [],
@@ -377,18 +434,19 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
               "raw": "{{baseUrl}}/game-lobby/ready",
               "host": [
-                "{{baseUrl}}/game-lobby/ready"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "game-lobby",
+                "ready"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -397,6 +455,16 @@
                   "language": "json"
                 }
               }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "response": [],
@@ -420,18 +488,19 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{access_token}}"
               }
             ],
             "url": {
               "raw": "{{baseUrl}}/game-lobby/start",
               "host": [
-                "{{baseUrl}}/game-lobby/start"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "game-lobby",
+                "start"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -440,6 +509,16 @@
                   "language": "json"
                 }
               }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
             }
           },
           "response": [],
@@ -450,6 +529,389 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"Start retornou 200/409/403/404\", function () { pm.expect([200,409,403,404]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "State",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/game-lobby/state",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "game-lobby",
+                "state"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"State retornou 200/404/401\", function () { pm.expect([200,404,401]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leave",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/game-lobby/leave",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "game-lobby",
+                "leave"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Leave retornou 200/404/409/401\", function () { pm.expect([200,404,409,401]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "End",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/game-lobby/end",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "game-lobby",
+                "end"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"End retornou 200/403/404/409\", function () { pm.expect([200,403,404,409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Realtime Game",
+      "item": [
+        {
+          "name": "State",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/realtime-game/state",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "realtime-game",
+                "state"
+              ]
+            },
+            "description": "Retorna a visão do jogador autenticado com myHand e topCard.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Realtime state retornou 200/404\", function () { pm.expect([200,404]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Play Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/realtime-game/play",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "realtime-game",
+                "play"
+              ]
+            },
+            "description": "Joga uma carta do índice informado da mão do jogador.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{game_id}}\",\n  \"card_index\": 0,\n  \"chosen_color\": \"blue\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Play retornou 200/400/404/409\", function () { pm.expect([200,400,404,409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Draw Card",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/realtime-game/draw",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "realtime-game",
+                "draw"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Draw retornou 200/404/409\", function () { pm.expect([200,404,409]).to.include(pm.response.code); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Declare UNO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/realtime-game/uno",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "realtime-game",
+                "uno"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"UNO retornou 200/404/409\", function () { pm.expect([200,404,409]).to.include(pm.response.code); });"
                 ]
               }
             }
@@ -473,9 +935,13 @@
             "url": {
               "raw": "{{baseUrl}}/players",
               "host": [
-                "{{baseUrl}}/players"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "players"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Player Bruno\",\n  \"age\": 20,\n  \"email\": \"player_bruno@email.com\"\n}",
@@ -493,14 +959,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "",
-                  "pm.test(\"Create player OK\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "});",
+                  "pm.test(\"Create player OK\", function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "if (json.id) {",
-                  "  pm.collectionVariables.set(\"player_id\", json.id);",
-                  "}"
+                  "if (json.id) pm.collectionVariables.set(\"player_id\", String(json.id));"
                 ]
               }
             }
@@ -514,9 +975,13 @@
             "url": {
               "raw": "{{baseUrl}}/players",
               "host": [
-                "{{baseUrl}}/players"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "players"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -528,9 +993,14 @@
             "url": {
               "raw": "{{baseUrl}}/players/{{player_id}}",
               "host": [
-                "{{baseUrl}}/players/{{player_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "players",
+                "{{player_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -547,12 +1017,17 @@
             "url": {
               "raw": "{{baseUrl}}/players/{{player_id}}",
               "host": [
-                "{{baseUrl}}/players/{{player_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "players",
+                "{{player_id}}"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Player Bruno Atualizado\",\n  \"age\": 21,\n  \"email\": \"player_bruno_atualizado@email.com\"\n}",
+              "raw": "{\n  \"name\": \"Bruno Atualizado\",\n  \"age\": 21,\n  \"email\": \"novoemail@email.com\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -570,9 +1045,14 @@
             "url": {
               "raw": "{{baseUrl}}/players/{{player_id}}",
               "host": [
-                "{{baseUrl}}/players/{{player_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "players",
+                "{{player_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         }
@@ -594,9 +1074,13 @@
             "url": {
               "raw": "{{baseUrl}}/games",
               "host": [
-                "{{baseUrl}}/games"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"title\": \"Partida CRUD\",\n  \"status\": \"waiting\",\n  \"maxPlayers\": 4\n}",
@@ -614,14 +1098,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "",
-                  "pm.test(\"Create game OK\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "});",
+                  "pm.test(\"Create game OK\", function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "if (json.id) {",
-                  "  pm.collectionVariables.set(\"game_id\", json.id);",
-                  "}"
+                  "if (json.id) pm.collectionVariables.set(\"game_id\", String(json.id));"
                 ]
               }
             }
@@ -635,9 +1114,13 @@
             "url": {
               "raw": "{{baseUrl}}/games",
               "host": [
-                "{{baseUrl}}/games"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -649,9 +1132,14 @@
             "url": {
               "raw": "{{baseUrl}}/games/{{game_id}}",
               "host": [
-                "{{baseUrl}}/games/{{game_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "{{game_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -668,12 +1156,17 @@
             "url": {
               "raw": "{{baseUrl}}/games/{{game_id}}",
               "host": [
-                "{{baseUrl}}/games/{{game_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "{{game_id}}"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Partida CRUD Atualizada\",\n  \"status\": \"in_progress\",\n  \"maxPlayers\": 4\n}",
+              "raw": "{\n  \"title\": \"Partida Atualizada\",\n  \"status\": \"in_progress\",\n  \"maxPlayers\": 4\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -691,9 +1184,14 @@
             "url": {
               "raw": "{{baseUrl}}/games/{{game_id}}",
               "host": [
-                "{{baseUrl}}/games/{{game_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "{{game_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -710,10 +1208,14 @@
             "url": {
               "raw": "{{baseUrl}}/games/state",
               "host": [
-                "{{baseUrl}}/games/state"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "state"
               ]
             },
-            "description": "Observação: no código atual esta rota pode falhar por causa da ordem das rotas em gameRoutes.js.",
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -739,10 +1241,14 @@
             "url": {
               "raw": "{{baseUrl}}/games/players",
               "host": [
-                "{{baseUrl}}/games/players"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "players"
               ]
             },
-            "description": "Observação: no código atual esta rota pode falhar por causa da ordem das rotas em gameRoutes.js.",
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -768,10 +1274,14 @@
             "url": {
               "raw": "{{baseUrl}}/games/current-player",
               "host": [
-                "{{baseUrl}}/games/current-player"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "current-player"
               ]
             },
-            "description": "Observação: no código atual esta rota pode falhar por causa da ordem das rotas em gameRoutes.js.",
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -797,10 +1307,14 @@
             "url": {
               "raw": "{{baseUrl}}/games/top-card",
               "host": [
-                "{{baseUrl}}/games/top-card"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "top-card"
               ]
             },
-            "description": "Observação: no código atual esta rota pode falhar por causa da ordem das rotas em gameRoutes.js.",
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -826,10 +1340,14 @@
             "url": {
               "raw": "{{baseUrl}}/games/scores",
               "host": [
-                "{{baseUrl}}/games/scores"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "games",
+                "scores"
               ]
             },
-            "description": "Observação: no código atual esta rota pode falhar por causa da ordem das rotas em gameRoutes.js.",
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"game_id\": \"{{game_id}}\"\n}",
@@ -860,9 +1378,13 @@
             "url": {
               "raw": "{{baseUrl}}/cards",
               "host": [
-                "{{baseUrl}}/cards"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cards"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"color\": \"red\",\n  \"value\": \"7\",\n  \"gameId\": \"{{game_id}}\"\n}",
@@ -880,14 +1402,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "",
-                  "pm.test(\"Create card OK\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "});",
+                  "pm.test(\"Create card OK\", function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "if (json.id) {",
-                  "  pm.collectionVariables.set(\"card_id\", json.id);",
-                  "}"
+                  "if (json.id) pm.collectionVariables.set(\"card_id\", String(json.id));"
                 ]
               }
             }
@@ -901,9 +1418,13 @@
             "url": {
               "raw": "{{baseUrl}}/cards",
               "host": [
-                "{{baseUrl}}/cards"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cards"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -915,9 +1436,14 @@
             "url": {
               "raw": "{{baseUrl}}/cards/{{card_id}}",
               "host": [
-                "{{baseUrl}}/cards/{{card_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cards",
+                "{{card_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -934,9 +1460,14 @@
             "url": {
               "raw": "{{baseUrl}}/cards/{{card_id}}",
               "host": [
-                "{{baseUrl}}/cards/{{card_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cards",
+                "{{card_id}}"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"color\": \"blue\",\n  \"value\": \"skip\",\n  \"gameId\": \"{{game_id}}\"\n}",
@@ -957,9 +1488,14 @@
             "url": {
               "raw": "{{baseUrl}}/cards/{{card_id}}",
               "host": [
-                "{{baseUrl}}/cards/{{card_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cards",
+                "{{card_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         }
@@ -981,9 +1517,13 @@
             "url": {
               "raw": "{{baseUrl}}/scores",
               "host": [
-                "{{baseUrl}}/scores"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "scores"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"playerId\": \"{{player_id}}\",\n  \"gameId\": \"{{game_id}}\",\n  \"score\": 120\n}",
@@ -1001,14 +1541,9 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "",
-                  "pm.test(\"Create score OK\", function () {",
-                  "  pm.response.to.have.status(201);",
-                  "});",
+                  "pm.test(\"Create score OK\", function () { pm.response.to.have.status(201); });",
                   "const json = pm.response.json();",
-                  "if (json.id) {",
-                  "  pm.collectionVariables.set(\"score_id\", json.id);",
-                  "}"
+                  "if (json.id) pm.collectionVariables.set(\"score_id\", String(json.id));"
                 ]
               }
             }
@@ -1022,9 +1557,13 @@
             "url": {
               "raw": "{{baseUrl}}/scores",
               "host": [
-                "{{baseUrl}}/scores"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "scores"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -1036,9 +1575,14 @@
             "url": {
               "raw": "{{baseUrl}}/scores/{{score_id}}",
               "host": [
-                "{{baseUrl}}/scores/{{score_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "scores",
+                "{{score_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         },
@@ -1055,9 +1599,14 @@
             "url": {
               "raw": "{{baseUrl}}/scores/{{score_id}}",
               "host": [
-                "{{baseUrl}}/scores/{{score_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "scores",
+                "{{score_id}}"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"playerId\": \"{{player_id}}\",\n  \"gameId\": \"{{game_id}}\",\n  \"score\": 150\n}",
@@ -1078,9 +1627,14 @@
             "url": {
               "raw": "{{baseUrl}}/scores/{{score_id}}",
               "host": [
-                "{{baseUrl}}/scores/{{score_id}}"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "scores",
+                "{{score_id}}"
               ]
-            }
+            },
+            "description": ""
           },
           "response": []
         }
@@ -1102,9 +1656,13 @@
             "url": {
               "raw": "{{baseUrl}}/nextTurn",
               "host": [
-                "{{baseUrl}}/nextTurn"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "nextTurn"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"players\": [\n    \"Bruno\",\n    \"Ana\",\n    \"Carlos\"\n  ],\n  \"currentPlayerIndex\": 0\n}",
@@ -1130,12 +1688,16 @@
             "url": {
               "raw": "{{baseUrl}}/playCard",
               "host": [
-                "{{baseUrl}}/playCard"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "playCard"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"cardPlayed\": \"reverse\",\n  \"currentPlayerIndex\": 1,\n  \"players\": [\n    \"Bruno\",\n    \"Ana\",\n    \"Carlos\"\n  ],\n  \"direction\": \"clockwise\"\n}",
+              "raw": "{\n  \"cardPlayed\": \"reverse\",\n  \"currentPlayerIndex\": 1,\n  \"players\": [\n    \"Bruno\",\n    \"Ana\",\n    \"Carlos\"\n  ],\n  \"direction\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1158,12 +1720,16 @@
             "url": {
               "raw": "{{baseUrl}}/drawCard",
               "host": [
-                "{{baseUrl}}/drawCard"
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "drawCard"
               ]
             },
+            "description": "",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"playerHand\": [\n    \"red_2\",\n    \"blue_5\"\n  ],\n  \"deck\": [\n    \"yellow_skip\",\n    \"red_9\"\n  ],\n  \"currentCard\": \"blue_7\"\n}",
+              "raw": "{\n  \"playerHand\": [\n    \"red_2\",\n    \"blue_5\"\n  ],\n  \"deck\": [\n    \"yellow_skip\",\n    \"red_9\"\n  ],\n  \"currentCard\": \"blue_5\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1174,6 +1740,68 @@
           "response": []
         }
       ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "baseOrigin",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "docsUrl",
+      "value": "http://localhost:3000/unoAPI",
+      "type": "string"
+    },
+    {
+      "key": "openapiUrl",
+      "value": "http://localhost:3000/openapi.json",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "bruno_teste",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "bruno_teste@email.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "123456",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "game_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "player_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "card_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "score_id",
+      "value": "",
+      "type": "string"
     }
   ]
 }

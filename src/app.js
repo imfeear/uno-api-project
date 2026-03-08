@@ -10,7 +10,7 @@ const memoize = require("./middlewares/memoize");
 const cacheBuster = require("./middlewares/cacheBuster");
 const { CACHE_MAX, CACHE_MAX_AGE_MS } = require("./config/cache");
 const swaggerUi = require("swagger-ui-express");
-const swaggerSpecs = require("./config/swagger");
+const swaggerSpecs = require("./docs/swagger");
 
 const app = express();
 
@@ -22,7 +22,18 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/unoAPI", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.use("/unoAPI", swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+  explorer: true,
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+  },
+}));
+
+app.get("/openapi.json", (req, res) => {
+  res.setHeader("Content-Type", "application/json");
+  res.send(swaggerSpecs);
+});
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
