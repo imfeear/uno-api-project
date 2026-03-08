@@ -43,34 +43,35 @@ async function remove(id) {
 
 async function getGameById(gameId) {
   const id = Number(gameId);
-  if (isNaN(id)) return null;
+  if (Number.isNaN(id)) return null;
 
   const { Game } = require("../models");
-  return await Game.findByPk(id);
+  return Game.findByPk(id);
 }
 
 async function getPlayersByGame(gameId) {
   const id = Number(gameId);
-  if (isNaN(id)) return null;
+  if (Number.isNaN(id)) return null;
 
-  return await repo.findPlayersByGame(id);
+  return repo.findPlayersByGame(id);
 }
 
-// Feature 12
 async function getCurrentPlayer(gameId) {
   const id = Number(gameId);
-  if (isNaN(id)) return null;
+  if (Number.isNaN(id)) return null;
 
   const game = await repo.findGameWithPlayers(id);
   if (!game || !game.users || game.users.length === 0) return null;
 
-  const index = game.current_player_index || 0;
+  const totalPlayers = game.users.length;
+  const index = ((game.currentPlayerIndex || 0) % totalPlayers + totalPlayers) % totalPlayers;
+
   return game.users[index];
 }
 
 async function findAll() {
   const { Game } = require("../models");
-  return await Game.findAll();
+  return Game.findAll();
 }
 
 module.exports = {
@@ -82,5 +83,5 @@ module.exports = {
   getGameById,
   getPlayersByGame,
   getCurrentPlayer,
-  findAll
+  findAll,
 };

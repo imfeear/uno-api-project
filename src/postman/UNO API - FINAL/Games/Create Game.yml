@@ -1,0 +1,43 @@
+info:
+  name: Create Game
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/games"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Partida CRUD",
+        "status": "waiting",
+        "maxPlayers": 4
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: "test(\"Create game OK\", function () {\r
+
+        \  expect(res.getStatus()).to.equal(201);\r
+
+        });\r
+
+        const json = res.getBody();\r
+
+        if (json.id) {\r
+
+        \  bru.setVar(\"game_id\", json.id);\r
+
+        }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

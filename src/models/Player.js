@@ -9,5 +9,8 @@ module.exports = (sequelize) =>
       age: { type: DataTypes.INTEGER, allowNull: false },
       email: { type: DataTypes.STRING(160), allowNull: false, unique: true }
     },
-    { tableName: "players", timestamps: true }
+    {
+      tableName: "players",
+      timestamps: false
+    }
   );

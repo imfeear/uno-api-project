@@ -1,0 +1,32 @@
+info:
+  name: Draw Card
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/drawCard"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "playerHand": [
+          "red_2",
+          "blue_5"
+        ],
+        "deck": [
+          "yellow_skip",
+          "red_9"
+        ],
+        "currentCard": "blue_7"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

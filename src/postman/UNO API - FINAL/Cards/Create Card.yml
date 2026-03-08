@@ -1,0 +1,43 @@
+info:
+  name: Create Card
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/cards"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "color": "red",
+        "value": "7",
+        "gameId": "{{game_id}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: "test(\"Create card OK\", function () {\r
+
+        \  expect(res.getStatus()).to.equal(201);\r
+
+        });\r
+
+        const json = res.getBody();\r
+
+        if (json.id) {\r
+
+        \  bru.setVar(\"card_id\", json.id);\r
+
+        }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

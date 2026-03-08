@@ -1,0 +1,26 @@
+info:
+  name: Current Player
+  type: http
+  seq: 8
+
+http:
+  method: POST
+  url: "{{baseUrl}}/games/current-player"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "game_id": "{{game_id}}"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: "Observação: no código atual esta rota pode falhar por causa da ordem das rotas em gameRoutes.js."

@@ -75,7 +75,14 @@ async function getProfileByToken(token) {
     const user = await userRepo.findById(payload.userId);
     if (!user) return { status: 404, error: "User not found" };
 
-    return { status: 200, data: { username: user.username, email: user.email } };
+    return {
+      status: 200,
+      data: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+      },
+    };
   } catch (e) {
     return { status: 401, error: "Invalid token" };
   }
@@ -87,7 +94,5 @@ module.exports = {
   logout,
   verifyToken,
   getProfileByToken,
-
-  // útil pra teste, se precisar limpar
-  _tokenBlacklist: tokenBlacklist
+  _tokenBlacklist: tokenBlacklist,
 };

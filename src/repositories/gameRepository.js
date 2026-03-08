@@ -1,6 +1,5 @@
 const { Game, PlayerGame, User } = require("../models");
 
-// CRUD de Game (correto)
 async function create(data) {
   return Game.create(data);
 }
@@ -27,7 +26,6 @@ async function remove(id) {
   return true;
 }
 
-// Consultas extras (users do game via PlayerGame)
 async function findPlayersByGame(gameId) {
   const playerGames = await PlayerGame.findAll({
     where: { gameId },
@@ -35,10 +33,10 @@ async function findPlayersByGame(gameId) {
       {
         model: User,
         as: "user",
-        attributes: ["id", "username"]
-      }
+        attributes: ["id", "username"],
+      },
     ],
-    order: [["joinedAt", "ASC"]]
+    order: [["joinedAt", "ASC"]],
   });
 
   return playerGames.map((pg) => (pg.user ? pg.user.username : `User ${pg.userId}`));
@@ -51,9 +49,9 @@ async function findGameWithPlayers(gameId) {
         model: User,
         as: "users",
         through: { attributes: [] },
-        attributes: ["id", "username"]
-      }
-    ]
+        attributes: ["id", "username"],
+      },
+    ],
   });
 }
 
@@ -64,5 +62,5 @@ module.exports = {
   update,
   remove,
   findPlayersByGame,
-  findGameWithPlayers
+  findGameWithPlayers,
 };

@@ -31,12 +31,19 @@ async function remove(id) {
   return true;
 }
 
-// Feature 13: Topo do descarte (assumimos: última carta criada no jogo)
 async function findTopCardByGame(gameId) {
   return Card.findOne({
     where: { gameId },
-    order: [["createdAt", "DESC"], ["id", "DESC"]]
+    order: [["id", "DESC"]],
   });
 }
 
-module.exports = { create, findById, findAll, gameExists, update, remove, findTopCardByGame };
+module.exports = {
+  create,
+  findById,
+  findAll,
+  gameExists,
+  update,
+  remove,
+  findTopCardByGame,
+};

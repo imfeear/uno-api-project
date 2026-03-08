@@ -1,0 +1,29 @@
+info:
+  name: Next Turn
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/nextTurn"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "players": [
+          "Bruno",
+          "Ana",
+          "Carlos"
+        ],
+        "currentPlayerIndex": 0
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

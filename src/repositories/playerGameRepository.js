@@ -1,4 +1,4 @@
-const { PlayerGame } = require("../models");
+const { PlayerGame, User } = require("../models");
 
 async function create(data) {
   return PlayerGame.create(data);
@@ -9,7 +9,11 @@ async function findByGameAndUser(gameId, userId) {
 }
 
 async function findByGame(gameId) {
-  return PlayerGame.findAll({ where: { gameId }, order: [["id", "ASC"]] });
+  return PlayerGame.findAll({
+    where: { gameId },
+    include: [{ model: User, as: "user", attributes: ["id", "username", "email"] }],
+    order: [["id", "ASC"]],
+  });
 }
 
 async function updateReady(id, isReady) {
@@ -28,5 +32,5 @@ module.exports = {
   findByGameAndUser,
   findByGame,
   updateReady,
-  removeByGameAndUser
+  removeByGameAndUser,
 };

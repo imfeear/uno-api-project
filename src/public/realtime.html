@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UNO Realtime Lobby</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      margin: 0;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: #1f2937;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    input, button, textarea, select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #374151;
+      margin-top: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    button {
+      background: #2563eb;
+      color: white;
+      border: 0;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #374151;
+    }
+
+    button.warning {
+      background: #dc2626;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    ul {
+      padding-left: 18px;
+    }
+
+    #chatLog, #eventLog {
+      max-height: 260px;
+      overflow: auto;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .muted {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .warning-text {
+      color: #fca5a5;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .hand-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .hand-card {
+      background: #0f172a;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 10px;
+      min-width: 120px;
+    }
+
+    .top-card-box {
+      background: #0f172a;
+      padding: 16px;
+      border-radius: 8px;
+      min-height: 60px;
+    }
+
+    @media (max-width: 900px) {
+      .grid,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>UNO Realtime Lobby</h1>
+    <p class="muted">
+      Abra esta página em duas abas, faça login com dois usuários e use a mesma sala para testar o jogo em tempo real.
+    </p>
+
+    <div class="grid">
+      <div class="card">
+        <h2>1. Login HTTP</h2>
+        <label>Base URL</label>
+        <input id="baseUrl" value="http://localhost:3000/api" />
+
+        <label>Username</label>
+        <input id="username" placeholder="bruno" />
+
+        <label>Password</label>
+        <input id="password" type="password" placeholder="123456" />
+
+        <button id="loginBtn">Fazer login</button>
+        <div id="loginStatus" class="muted"></div>
+      </div>
+
+      <div class="card">
+        <h2>2. Socket</h2>
+        <label>Token JWT</label>
+        <textarea id="token" rows="4" placeholder="Cole o token ou use o login acima"></textarea>
+
+        <button id="connectBtn">Conectar Socket</button>
+        <div id="socketStatus" class="muted"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>3. Sala</h2>
+        <label>Game ID</label>
+        <input id="gameId" placeholder="1" />
+
+        <button id="joinRoomBtn">Entrar na sala em tempo real</button>
+        <button id="loadStateBtn" class="secondary">Carregar estado via HTTP</button>
+        <button id="loadRealtimeStateBtn" class="secondary">Carregar estado da partida</button>
+      </div>
+
+      <div class="card">
+        <h2>4. Chat</h2>
+        <label>Mensagem</label>
+        <input id="message" placeholder="Oi, entrei na sala" />
+
+        <button id="sendMsgBtn">Enviar mensagem</button>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <h2>5. Jogada</h2>
+        <label>Índice da carta na sua mão</label>
+        <input id="cardIndex" placeholder="0" />
+
+        <label>Cor escolhida para Wild / Wild Draw 4</label>
+        <select id="chosenColor">
+          <option value="">Selecione uma cor</option>
+          <option value="red">Vermelho</option>
+          <option value="yellow">Amarelo</option>
+          <option value="green">Verde</option>
+          <option value="blue">Azul</option>
+        </select>
+
+        <button id="playBtn">Jogar carta</button>
+        <button id="drawBtn" class="secondary">Comprar carta</button>
+        <button id="unoBtn" class="warning">Declarar UNO</button>
+        <div id="unoWarning" class="warning-text"></div>
+      </div>
+
+      <div class="card">
+        <h2>Topo da pilha</h2>
+        <div class="top-card-box" id="topCardBox">Nenhuma carta.</div>
+      </div>
+
+      <div class="card">
+        <h2>Resumo</h2>
+        <div id="summaryBox" class="muted">Sem dados da partida.</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Estado do lobby</h2>
+        <pre id="snapshotBox">Nenhum estado carregado.</pre>
+      </div>
+
+      <div class="card">
+        <h2>Estado da partida</h2>
+        <pre id="gameStateBox">Nenhum estado da partida carregado.</pre>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Jogadores</h2>
+        <ul id="playersList"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Minha mão</h2>
+        <div id="myHandCount" class="muted">0 cartas</div>
+        <div id="myHand" class="hand-list"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Eventos</h2>
+        <div id="eventLog"></div>
+      </div>
+
+      <div class="card">
+        <h2>Chat</h2>
+        <div id="chatLog"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let socket = null;
+
+    const loginStatus = document.getElementById("loginStatus");
+    const socketStatus = document.getElementById("socketStatus");
+    const snapshotBox = document.getElementById("snapshotBox");
+    const gameStateBox = document.getElementById("gameStateBox");
+    const playersList = document.getElementById("playersList");
+    const eventLog = document.getElementById("eventLog");
+    const chatLog = document.getElementById("chatLog");
+    const myHand = document.getElementById("myHand");
+    const myHandCount = document.getElementById("myHandCount");
+    const topCardBox = document.getElementById("topCardBox");
+    const summaryBox = document.getElementById("summaryBox");
+    const unoWarning = document.getElementById("unoWarning");
+
+    function appendLog(container, text) {
+      const line = document.createElement("div");
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+      container.prepend(line);
+    }
+
+    function renderLobbySnapshot(snapshot) {
+      snapshotBox.textContent = JSON.stringify(snapshot, null, 2);
+    }
+
+    function renderGameState(state) {
+      gameStateBox.textContent = JSON.stringify(state, null, 2);
+
+      const topCard = state && state.topCard ? state.topCard : null;
+      topCardBox.textContent = topCard
+        ? `${topCard.color} / ${topCard.value}${topCard.chosenColor ? ` (cor escolhida: ${topCard.chosenColor})` : ""}`
+        : "Nenhuma carta.";
+
+      if (!state) {
+        summaryBox.textContent = "Sem dados da partida.";
+        return;
+      }
+
+      const directionLabel = state.direction === 1 ? "horário" : "anti-horário";
+      const winner = state.winnerUserId ? ` | vencedor: ${state.winnerUserId}` : "";
+
+      summaryBox.textContent =
+        `gameId: ${state.gameId} | status: ${state.status} | turno: ${state.currentPlayerIndex} | direção: ${directionLabel}${winner}`;
+    }
+
+    function renderPlayers(players) {
+      playersList.innerHTML = "";
+
+      (players || []).forEach((player, index) => {
+        const li = document.createElement("li");
+        const current = player.isCurrentTurn ? " | turno atual" : "";
+        const ready = player.isReady ? " | pronto" : " | não pronto";
+        const uno =
+          player.mustDeclareUno
+            ? " | precisa dizer UNO"
+            : player.unoDeclared
+            ? " | UNO declarado"
+            : "";
+        li.textContent = `#${index} ${player.username || "Sem nome"} | ${player.handCount || 0} cartas${ready}${current}${uno}`;
+        playersList.appendChild(li);
+      });
+    }
+
+    function renderMyHand(cards) {
+      myHand.innerHTML = "";
+      const hand = cards || [];
+      myHandCount.textContent = `${hand.length} carta(s)`;
+
+      hand.forEach((card, index) => {
+        const div = document.createElement("div");
+        div.className = "hand-card";
+        div.innerHTML = `
+          <strong>Índice ${index}</strong><br>
+          cor: ${card.color}<br>
+          valor: ${card.value}
+        `;
+        myHand.appendChild(div);
+      });
+    }
+
+    function renderPrivateState(state) {
+      renderGameState(state);
+      renderPlayers(state.players || []);
+      renderMyHand(state.myHand || []);
+
+      if (state.mustDeclareUno) {
+        unoWarning.textContent = "Você está com 1 carta. Clique em Declarar UNO.";
+      } else if (state.unoDeclared) {
+        unoWarning.textContent = "UNO já foi declarado.";
+      } else {
+        unoWarning.textContent = "";
+      }
+    }
+
+    async function apiPost(path, token, body) {
+      const baseUrl = document.getElementById("baseUrl").value.trim();
+
+      const res = await fetch(`${baseUrl}${path}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(body || {}),
+      });
+
+      const data = await res.json();
+      return { res, data };
+    }
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const baseUrl = document.getElementById("baseUrl").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      const res = await fetch(`${baseUrl}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        loginStatus.textContent = data.error || "Falha no login";
+        return;
+      }
+
+      document.getElementById("token").value = data.access_token;
+      loginStatus.textContent = "Login realizado com sucesso.";
+    });
+
+    document.getElementById("connectBtn").addEventListener("click", () => {
+      const token = document.getElementById("token").value.trim();
+
+      if (!token) {
+        socketStatus.textContent = "Informe um token válido.";
+        return;
+      }
+
+      socket = io("/", { auth: { token } });
+
+      socket.on("connect", () => {
+        socketStatus.textContent = `Socket conectado: ${socket.id}`;
+      });
+
+      socket.on("connected", (payload) => {
+        appendLog(eventLog, `Autenticado como ${payload.user.username}`);
+      });
+
+      socket.on("room_joined", ({ game_id }) => {
+        appendLog(eventLog, `Entrou na sala ${game_id}`);
+      });
+
+      socket.on("room_left", ({ game_id }) => {
+        appendLog(eventLog, `Saiu da sala ${game_id}`);
+      });
+
+      socket.on("room_error", ({ message }) => {
+        appendLog(eventLog, `Erro: ${message}`);
+      });
+
+      socket.on("lobby_snapshot", (snapshot) => {
+        renderLobbySnapshot(snapshot);
+        appendLog(eventLog, `Lobby atualizado da sala ${snapshot.game_id}`);
+      });
+
+      socket.on("game_state", (state) => {
+        renderGameState(state);
+        renderPlayers(state.players || []);
+        appendLog(eventLog, "Estado compartilhado da partida atualizado.");
+      });
+
+      socket.on("private_game_state", (state) => {
+        renderPrivateState(state);
+        appendLog(eventLog, "Seu estado privado da partida foi atualizado.");
+      });
+
+      socket.on("game_event", (event) => {
+        appendLog(eventLog, `${event.type}: ${event.message}`);
+
+        if (event.snapshot) {
+          renderGameState(event.snapshot);
+          renderPlayers(event.snapshot.players || []);
+        }
+      });
+
+      socket.on("chat_message", (payload) => {
+        appendLog(chatLog, `${payload.user.username}: ${payload.message}`);
+      });
+
+      socket.on("disconnect", () => {
+        socketStatus.textContent = "Socket desconectado.";
+      });
+    });
+
+    document.getElementById("joinRoomBtn").addEventListener("click", () => {
+      if (!socket) {
+        appendLog(eventLog, "Conecte o socket primeiro.");
+        return;
+      }
+
+      const game_id = Number(document.getElementById("gameId").value);
+      socket.emit("join_game_room", { game_id });
+    });
+
+    document.getElementById("sendMsgBtn").addEventListener("click", () => {
+      if (!socket) {
+        appendLog(eventLog, "Conecte o socket primeiro.");
+        return;
+      }
+
+      const game_id = Number(document.getElementById("gameId").value);
+      const message = document.getElementById("message").value;
+
+      socket.emit("chat_message", { game_id, message });
+      document.getElementById("message").value = "";
+    });
+
+    document.getElementById("loadStateBtn").addEventListener("click", async () => {
+      const token = document.getElementById("token").value.trim();
+      const game_id = Number(document.getElementById("gameId").value);
+
+      const { res, data } = await apiPost("/game-lobby/state", token, { game_id });
+
+      if (!res.ok) {
+        appendLog(eventLog, data.error || "Erro ao consultar estado do lobby");
+        return;
+      }
+
+      renderLobbySnapshot(data);
+      appendLog(eventLog, "Estado do lobby carregado via HTTP.");
+    });
+
+    document.getElementById("loadRealtimeStateBtn").addEventListener("click", async () => {
+      const token = document.getElementById("token").value.trim();
+      const game_id = Number(document.getElementById("gameId").value);
+
+      const { res, data } = await apiPost("/realtime-game/state", token, { game_id });
+
+      if (!res.ok) {
+        appendLog(eventLog, data.error || "Erro ao consultar estado da partida");
+        return;
+      }
+
+      renderPrivateState(data);
+      appendLog(eventLog, "Estado da partida carregado via HTTP.");
+    });
+
+    document.getElementById("playBtn").addEventListener("click", async () => {
+      const token = document.getElementById("token").value.trim();
+      const game_id = Number(document.getElementById("gameId").value);
+      const card_index = Number(document.getElementById("cardIndex").value);
+      const chosen_color = document.getElementById("chosenColor").value;
+
+      const { res, data } = await apiPost("/realtime-game/play", token, {
+        game_id,
+        card_index,
+        chosen_color,
+      });
+
+      if (!res.ok) {
+        appendLog(eventLog, data.error || "Erro ao jogar carta");
+        return;
+      }
+
+      appendLog(eventLog, data.message || "Carta jogada.");
+      if (socket) {
+        socket.emit("request_game_state", { game_id });
+      }
+    });
+
+    document.getElementById("drawBtn").addEventListener("click", async () => {
+      const token = document.getElementById("token").value.trim();
+      const game_id = Number(document.getElementById("gameId").value);
+
+      const { res, data } = await apiPost("/realtime-game/draw", token, { game_id });
+
+      if (!res.ok) {
+        appendLog(eventLog, data.error || "Erro ao comprar carta");
+        return;
+      }
+
+      appendLog(eventLog, data.message || "Carta comprada.");
+      if (socket) {
+        socket.emit("request_game_state", { game_id });
+      }
+    });
+
+    document.getElementById("unoBtn").addEventListener("click", async () => {
+      const token = document.getElementById("token").value.trim();
+      const game_id = Number(document.getElementById("gameId").value);
+
+      const { res, data } = await apiPost("/realtime-game/uno", token, { game_id });
+
+      if (!res.ok) {
+        appendLog(eventLog, data.error || "Erro ao declarar UNO");
+        return;
+      }
+
+      appendLog(eventLog, data.message || "UNO declarado.");
+      if (socket) {
+        socket.emit("request_game_state", { game_id });
+      }
+    });
+  </script>
+</body>
+</html>

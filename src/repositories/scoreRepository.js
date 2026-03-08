@@ -36,7 +36,6 @@ async function remove(id) {
   return true;
 }
 
-// Feature 14: scores do game + nome do Player
 async function findByGameWithPlayer(gameId) {
   return Score.findAll({
     where: { gameId },
@@ -44,11 +43,20 @@ async function findByGameWithPlayer(gameId) {
       {
         model: Player,
         as: "player",
-        attributes: ["id", "name"]
-      }
+        attributes: ["id", "name"],
+      },
     ],
-    order: [["timestamp", "DESC"], ["id", "DESC"]]
+    order: [["id", "DESC"]],
   });
 }
 
-module.exports = { create, findById, findAll, playerExists, gameExists, update, remove, findByGameWithPlayer };
+module.exports = {
+  create,
+  findById,
+  findAll,
+  playerExists,
+  gameExists,
+  update,
+  remove,
+  findByGameWithPlayer,
+};

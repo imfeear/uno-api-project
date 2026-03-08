@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const crypto = require("crypto");
 const routes = require("./routes");
 const notFound = require("./middlewares/notFound");
@@ -7,18 +8,18 @@ const errorHandler = require("./middlewares/errorHandler");
 const memoize = require("./middlewares/memoize");
 const cacheBuster = require("./middlewares/cacheBuster");
 const { CACHE_MAX, CACHE_MAX_AGE_MS } = require("./config/cache");
-const swaggerUi = require('swagger-ui-express'); // importa os pacotes do Swagger UI Express, criando a interface de documentação para visualizar e testar as rotas.
-const swaggerSpecs = require('./config/swagger');// essa variavel importa as especificações do Swagger, que são definidas em um arquivo separado (src/config/swagger.js).
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpecs = require("./config/swagger");
 
 const app = express();
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
-app.use('/unoAPI', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.use("/unoAPI", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
-// Configuração
 const memoizeMw = memoize({
   max: CACHE_MAX,
   maxAge: CACHE_MAX_AGE_MS,
@@ -37,7 +38,6 @@ const memoizeMw = memoize({
 app.use("/api", cacheBuster(memoizeMw));
 app.use("/api", memoizeMw);
 
-// Rotas de Debug (temporárias)
 if (process.env.NODE_ENV !== "production") {
   let __cacheHits = 0;
 
@@ -60,7 +60,6 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// Suas rotas reais
 app.use("/api", routes);
 
 app.use(notFound);

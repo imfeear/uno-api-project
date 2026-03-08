@@ -1,0 +1,43 @@
+info:
+  name: Create Score
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/scores"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "playerId": "{{player_id}}",
+        "gameId": "{{game_id}}",
+        "score": 120
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: "test(\"Create score OK\", function () {\r
+
+        \  expect(res.getStatus()).to.equal(201);\r
+
+        });\r
+
+        const json = res.getBody();\r
+
+        if (json.id) {\r
+
+        \  bru.setVar(\"score_id\", json.id);\r
+
+        }"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

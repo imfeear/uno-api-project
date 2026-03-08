@@ -1,0 +1,23 @@
+info:
+  name: Profile (GET com Bearer)
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/users/profile"
+  headers:
+    - name: Authorization
+      value: Bearer {{access_token}}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: test("Profile GET OK", function () { expect(res.getStatus()).to.equal(200); });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

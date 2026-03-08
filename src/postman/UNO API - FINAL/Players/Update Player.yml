@@ -1,0 +1,26 @@
+info:
+  name: Update Player
+  type: http
+  seq: 4
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/players/{{player_id}}"
+  headers:
+    - name: Content-Type
+      value: application/json
+  body:
+    type: json
+    data: |-
+      {
+        "name": "Player Bruno Atualizado",
+        "age": 21,
+        "email": "player_bruno_atualizado@email.com"
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
