@@ -1,7 +1,9 @@
-const { Game } = require("../models");
+const { Game, User } = require("../models");
 const playerGameRepo = require("../repositories/playerGameRepository");
 const gameStateRepo = require("../repositories/gameStateRepository");
 const playerHandRepo = require("../repositories/playerHandRepository");
+const playerRepo = require("../repositories/playerRepository");
+const scoreRepo = require("../repositories/scoreRepository");
 const lobbyEvents = require("../realtime/gameLobbyEvents");
 const { buildDeck, shuffle, canPlay } = require("../utils/unoDeck");
 
@@ -45,10 +47,10 @@ async function buildRealtimeSnapshot(gameId) {
         handCount: hand?.cards?.length || 0,
         isCurrentTurn: state ? index === state.currentPlayerIndex : false,
         mustDeclareUno: hand ? hand.mustDeclareUno : false,
-        unoDeclared: hand ? hand.unoDeclared : false,
+        unoDeclared: hand ? hand.unoDeclared : false
       };
     }),
-    winnerUserId: state ? state.winnerUserId : null,
+    winnerUserId: state ? state.winnerUserId : null
   };
 }
 
@@ -60,7 +62,7 @@ async function buildPlayerView(gameId, userId) {
     ...snapshot,
     myHand: hand ? hand.cards : [],
     mustDeclareUno: hand ? hand.mustDeclareUno : false,
-    unoDeclared: hand ? hand.unoDeclared : false,
+    unoDeclared: hand ? hand.unoDeclared : false
   };
 }
 
@@ -94,7 +96,7 @@ async function startRealtimeGame(gameId) {
     direction: 1,
     currentPlayerIndex: 0,
     started: true,
-    winnerUserId: null,
+    winnerUserId: null
   });
 
   for (const player of playerHands) {
@@ -103,11 +105,39 @@ async function startRealtimeGame(gameId) {
       userId: player.userId,
       cards: player.cards,
       mustDeclareUno: false,
-      unoDeclared: false,
+      unoDeclared: false
     });
   }
 
   return { ok: true };
+}
+
+async function ensureWinnerPlayerAndScore(winnerUserId, gameId) {
+  const winnerUser = await User.findByPk(winnerUserId);
+  if (!winnerUser) return;
+
+  let player = null;
+
+  if (winnerUser.email) {
+    player = await playerRepo.findByEmail(winnerUser.email);
+  }
+
+  if (!player) {
+    player = await playerRepo.create({
+      name: winnerUser.username || `User ${winnerUser.id}`,
+      age: 18,
+      email: winnerUser.email || `user${winnerUser.id}@uno.local`
+    });
+  }
+
+  const existingScore = await scoreRepo.findByPlayerAndGame(player.id, gameId);
+  if (existingScore) return;
+
+  await scoreRepo.create({
+    playerId: player.id,
+    gameId,
+    score: 1
+  });
 }
 
 async function playCard(gameId, userId, cardIndex, chosenColor) {
@@ -146,7 +176,7 @@ async function playCard(gameId, userId, cardIndex, chosenColor) {
     cardToDiscard = {
       ...chosenCard,
       chosenColor: wildColor,
-      color: wildColor,
+      color: wildColor
     };
   }
 
@@ -171,7 +201,7 @@ async function playCard(gameId, userId, cardIndex, chosenColor) {
     await playerHandRepo.updateCards(targetHand.id, targetCards);
     await playerHandRepo.updateUnoState(targetHand.id, {
       mustDeclareUno: false,
-      unoDeclared: false,
+      unoDeclared: false
     });
 
     step = 2;
@@ -186,7 +216,7 @@ async function playCard(gameId, userId, cardIndex, chosenColor) {
     await playerHandRepo.updateCards(targetHand.id, targetCards);
     await playerHandRepo.updateUnoState(targetHand.id, {
       mustDeclareUno: false,
-      unoDeclared: false,
+      unoDeclared: false
     });
 
     step = 2;
@@ -198,7 +228,7 @@ async function playCard(gameId, userId, cardIndex, chosenColor) {
   await playerHandRepo.updateCards(hand.id, cards);
   await playerHandRepo.updateUnoState(hand.id, {
     mustDeclareUno: cards.length === 1,
-    unoDeclared: false,
+    unoDeclared: false
   });
 
   let newCurrent = state.currentPlayerIndex;
@@ -212,6 +242,7 @@ async function playCard(gameId, userId, cardIndex, chosenColor) {
   const game = await Game.findByPk(gameId);
   if (winnerUserId) {
     await game.update({ status: "finished" });
+    await ensureWinnerPlayerAndScore(winnerUserId, gameId);
   }
 
   await state.update({
@@ -219,14 +250,14 @@ async function playCard(gameId, userId, cardIndex, chosenColor) {
     currentPlayerIndex: newCurrent,
     direction,
     deck: newDeck,
-    winnerUserId,
+    winnerUserId
   });
 
   lobbyEvents.emit("realtime_game_updated", {
     gameId,
     actor: userId,
     type: winnerUserId ? "game_finished" : "card_played",
-    message: winnerUserId ? "A player won the game." : "A card was played.",
+    message: winnerUserId ? "A player won the game." : "A card was played."
   });
 
   return { ok: true };
@@ -255,7 +286,7 @@ async function drawCard(gameId, userId) {
   if (hasPlayableCard) {
     return {
       error: "You already have a playable card in your hand and must play it",
-      status: 409,
+      status: 409
     };
   }
 
@@ -266,21 +297,21 @@ async function drawCard(gameId, userId) {
   await playerHandRepo.updateCards(hand.id, newCards);
   await playerHandRepo.updateUnoState(hand.id, {
     mustDeclareUno: false,
-    unoDeclared: false,
+    unoDeclared: false
   });
 
   const nextTurn = nextIndex(state.currentPlayerIndex, players.length, state.direction);
 
   await state.update({
     deck: newDeck,
-    currentPlayerIndex: nextTurn,
+    currentPlayerIndex: nextTurn
   });
 
   lobbyEvents.emit("realtime_game_updated", {
     gameId,
     actor: userId,
     type: "card_drawn",
-    message: "A player drew a card.",
+    message: "A player drew a card."
   });
 
   return { ok: true };
@@ -299,14 +330,14 @@ async function declareUno(gameId, userId) {
 
   await playerHandRepo.updateUnoState(hand.id, {
     mustDeclareUno: false,
-    unoDeclared: true,
+    unoDeclared: true
   });
 
   lobbyEvents.emit("realtime_game_updated", {
     gameId,
     actor: userId,
     type: "uno_declared",
-    message: "A player declared UNO.",
+    message: "A player declared UNO."
   });
 
   return { ok: true };
@@ -318,5 +349,5 @@ module.exports = {
   buildPlayerView,
   playCard,
   drawCard,
-  declareUno,
+  declareUno
 };

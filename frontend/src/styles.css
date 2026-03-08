@@ -544,6 +544,10 @@ td {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
+.score-result-block {
+  margin-top: 16px;
+}
+
 .score-list {
   display: flex;
   flex-direction: column;
@@ -562,9 +566,18 @@ td {
 }
 
 .score-table {
+  width: 100%;
   background: #0f1726;
   border: 1px solid #24334d;
   border-radius: 12px;
+  overflow: hidden;
+}
+
+.score-table th,
+.score-table td {
+  padding: 12px;
+  border-bottom: 1px solid #29415f;
+  text-align: left;
 }
 
 @media (max-width: 900px) {

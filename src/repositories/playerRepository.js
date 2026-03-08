@@ -16,6 +16,10 @@ async function findByEmail(email) {
   return Player.findOne({ where: { email } });
 }
 
+async function findByName(name) {
+  return Player.findOne({ where: { name } });
+}
+
 async function update(id, data) {
   const entity = await Player.findByPk(id);
   if (!entity) return null;
@@ -30,4 +34,12 @@ async function remove(id) {
   return true;
 }
 
-module.exports = { create, findById, findAll, findByEmail, update, remove };
+module.exports = {
+  create,
+  findById,
+  findAll,
+  findByEmail,
+  findByName,
+  update,
+  remove
+};

@@ -22,6 +22,12 @@ async function gameExists(gameId) {
   return !!g;
 }
 
+async function findByPlayerAndGame(playerId, gameId) {
+  return Score.findOne({
+    where: { playerId, gameId }
+  });
+}
+
 async function update(id, data) {
   const entity = await Score.findByPk(id);
   if (!entity) return null;
@@ -43,10 +49,10 @@ async function findByGameWithPlayer(gameId) {
       {
         model: Player,
         as: "player",
-        attributes: ["id", "name"],
-      },
+        attributes: ["id", "name"]
+      }
     ],
-    order: [["id", "DESC"]],
+    order: [["id", "DESC"]]
   });
 }
 
@@ -56,7 +62,8 @@ module.exports = {
   findAll,
   playerExists,
   gameExists,
+  findByPlayerAndGame,
   update,
   remove,
-  findByGameWithPlayer,
+  findByGameWithPlayer
 };
