@@ -4,6 +4,10 @@ export function listGames() {
   return api.get("/games");
 }
 
+export function deleteGame(gameId) {
+  return api.delete(`/games/${gameId}`);
+}
+
 export function createLobby(payload) {
   return api.post("/game-lobby/create", payload);
 }

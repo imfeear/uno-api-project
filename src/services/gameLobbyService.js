@@ -127,7 +127,11 @@ async function startGame(gameId, userId) {
   const allReady = players.every((p) => p.isReady === true);
   if (!allReady) return { error: "Not all users are ready", status: 409 };
 
-  await game.update({ status: "in_progress" });
+  await game.update({
+  status: "in_progress",
+  startedAt: new Date()
+});
+
   await realtimeGameService.startRealtimeGame(id);
   lobbyEvents.emit("game_started", {
     gameId: id,

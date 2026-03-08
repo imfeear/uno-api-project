@@ -36,6 +36,10 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      startedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      }
     },
     {
       tableName: "Games",

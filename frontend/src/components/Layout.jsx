@@ -13,7 +13,7 @@ export default function Layout({ children }) {
   return (
     <div>
       <header className="topbar">
-        <div className="brand">UNO Front</div>
+        <div className="brand">UNO - COMPUTADOS</div>
 
         <nav className="nav">
           <Link to="/lobby">Lobby</Link>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { createLobby, joinLobby, listGames } from "../api/lobby";
+import { createLobby, deleteGame, joinLobby, listGames } from "../api/lobby";
 
 function normalizeGames(data) {
   if (Array.isArray(data)) return data;
@@ -22,12 +22,69 @@ export default function LobbyPage() {
     max_players: 4
   });
 
+  function handleChange(e) {
+    setForm((old) => ({
+      ...old,
+      [e.target.name]: e.target.value
+    }));
+  }
+
+  async function cleanupExpiredInProgressGames(gameList) {
+    const now = Date.now();
+
+    const gamesToDelete = gameList.filter((game) => {
+      if (game.status !== "in_progress") return false;
+      if (!game.startedAt) return false;
+
+      const startedAtMs = new Date(game.startedAt).getTime();
+      const tenMinutes = 10 * 60 * 1000;
+
+      return now - startedAtMs > tenMinutes;
+    });
+
+    if (gamesToDelete.length === 0) {
+      return;
+    }
+
+    await Promise.allSettled(
+      gamesToDelete.map((game) => deleteGame(game.id))
+    );
+  }
+
+  function filterVisibleGames(gameList) {
+    const now = Date.now();
+
+    return gameList.filter((game) => {
+      if (game.status === "finished") {
+        return false;
+      }
+
+      if (game.status === "in_progress" && game.startedAt) {
+        const startedAtMs = new Date(game.startedAt).getTime();
+        const tenMinutes = 10 * 60 * 1000;
+
+        return now - startedAtMs <= tenMinutes;
+      }
+
+      return true;
+    });
+  }
+
   async function loadGames() {
     try {
       setLoading(true);
       setError("");
+      setInfo("");
+
       const data = await listGames();
-      setGames(normalizeGames(data));
+      const normalizedGames = normalizeGames(data);
+
+      await cleanupExpiredInProgressGames(normalizedGames);
+
+      const refreshed = await listGames();
+      const refreshedGames = normalizeGames(refreshed);
+
+      setGames(filterVisibleGames(refreshedGames));
     } catch (err) {
       setError(err.message || "Não foi possível carregar as partidas.");
     } finally {
@@ -37,14 +94,13 @@ export default function LobbyPage() {
 
   useEffect(() => {
     loadGames();
-  }, []);
 
-  function handleChange(e) {
-    setForm((old) => ({
-      ...old,
-      [e.target.name]: e.target.value
-    }));
-  }
+    const interval = setInterval(() => {
+      loadGames();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   async function handleCreate(e) {
     e.preventDefault();
@@ -123,7 +179,7 @@ export default function LobbyPage() {
         {loading ? (
           <p>Carregando partidas...</p>
         ) : games.length === 0 ? (
-          <p>Nenhuma partida encontrada.</p>
+          <p>Nenhuma partida disponível.</p>
         ) : (
           <div className="list">
             {games.map((game) => (
