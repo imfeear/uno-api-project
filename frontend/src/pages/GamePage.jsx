@@ -99,6 +99,25 @@ export default function GamePage() {
   const { connect, connected } = useSocketContext();
 
   const [state, setState] = useState(null);
+
+  useEffect(() => {
+  setState({
+    status: "playing",
+    direction: 1,
+    topCard: { color: "red", value: "5" },
+    players: [
+      { id: 1, username: "Player 1", handCount: 5, isCurrentTurn: true },
+      { id: 2, username: "Player 2", handCount: 4 }
+    ],
+    myHand: [
+      { color: "red", value: "3" },
+      { color: "blue", value: "7" },
+      { color: "green", value: "skip" },
+      { color: "yellow", value: "2" }
+    ]
+  });
+}, []);
+
   const [history, setHistory] = useState([]);
   const [scores, setScores] = useState([]);
   const [error, setError] = useState("");
@@ -110,7 +129,7 @@ export default function GamePage() {
   const [showResult, setShowResult] = useState(false);
   const endRedirectRef = useRef(null);
 
-  const numericGameId = useMemo(() => Number(gameId), [gameId]);
+  const numericGameId = useMemo(() => Number(gameId || 1), [gameId]);
 
   const players = state?.players || [];
   const myPlayer = players.find((p) => getPlayerId(p) === user?.id);
@@ -146,7 +165,7 @@ export default function GamePage() {
   }
 
   async function refreshAll() {
-    await Promise.all([loadState(), loadHistory(), loadScores()]);
+    return;
   }
 
   function handleEndGameRedirect() {

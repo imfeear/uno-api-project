@@ -39,16 +39,15 @@ export default function App() {
         }
       />
 
-      <Route
-        path="/game/:gameId"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <GamePage />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+    <Route
+      path="/game"
+      element={
+        <Layout>
+          <GamePage />
+        </Layout>
+      }
+    />
+
 
       <Route
         path="/profile"
